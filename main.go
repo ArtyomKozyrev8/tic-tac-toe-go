@@ -134,6 +134,21 @@ func (p *PlayField) AiMakeMove(aiSymbol int) {
 		}
 	}
 
+	// check if any cross line can lead to victory
+	if p.fields[0][0] == p.fields[1][1] {
+		err := p.MakeStep(aiSymbol, 2, 2)
+		if err == nil {
+			return
+		}
+	}
+
+	if p.fields[0][2] == p.fields[1][1] {
+		err := p.MakeStep(aiSymbol, 2, 0)
+		if err == nil {
+			return
+		}
+	}
+
 	// try to occupy corners of the field if they are free
 	corners := [][2]int{
 		{0, 0}, {0, 2}, {2, 0}, {2, 2},
