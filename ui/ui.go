@@ -1,26 +1,30 @@
 package ui
 
 import (
-	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/ArtyomKozyrev8/tic-tac-toe-go/gameboard"
 )
 
 type BoardPartName string
 
 // RowBoardPartName and ColumnBoardPartName are possible values for getUserInput
-const RowBoardPartName BoardPartName = "Row"
-const ColumnBoardPartName BoardPartName = "Column"
+const (
+	RowBoardPartName    BoardPartName = "Row"
+	ColumnBoardPartName BoardPartName = "Column"
+)
 
 func getUserInputBasis(inputName BoardPartName) (int, error) {
 	var index int
 	fmt.Print("Enter " + inputName + ": ")
-	_, errRow := fmt.Scan(&index)
+	_, errRow := fmt.Scanln(&index)
 	if errRow != nil {
 		return 0, errRow
 	}
 
-	if index < 0 || index > 2 {
-		return 0, errors.New(string(inputName) + "should be 0, 1, 2")
+	if index < 0 || index > board.ColumnsNumber {
+		return 0, fmt.Errorf("%s should be > 0 and < %d", inputName, board.ColumnsNumber)
 	}
 
 	return index, nil
@@ -40,19 +44,13 @@ func GetUserInput(inputName BoardPartName) int {
 
 func DecideToPlayWithAI() bool {
 	var playWithAIInput string
-	playWithAI := true
 	fmt.Print("Do you want to play with AI? (y/n): ")
+
 	_, err := fmt.Scanln(&playWithAIInput)
 	if err != nil {
 		fmt.Println(err)
-		playWithAI = true
+		return true
 	}
 
-	if playWithAIInput == "y" || playWithAIInput == "Y" {
-		playWithAI = true
-	} else {
-		playWithAI = false
-	}
-
-	return playWithAI
+	return strings.ToLower(playWithAIInput) == "y" || strings.ToLower(playWithAIInput) == "yes"
 }
