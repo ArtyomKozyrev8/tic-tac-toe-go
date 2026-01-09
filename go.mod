@@ -1,3 +1,3 @@
-module tic_tac_toe_go
+module github.com/ArtyomKozyrev8/tic-tac-toe-go
 
 go 1.25.3
