@@ -1,5 +1,8 @@
 package board
 
+// TODO create user-defined errors
+// TODO add tests to packages when all is improved!
+
 import (
 	"errors"
 	"fmt"
@@ -37,6 +40,8 @@ func (p *Board) ClearBoard() {
 
 // MakeMove adds symbol of to chosen field on Board
 func (p *Board) MakeMove(symbol FieldState, row, col int) error {
+	// TODO separate moves from validation
+
 	if p.fields[row][col] == EmptyFieldSymbolInteger {
 		p.fields[row][col] = symbol
 		return nil
@@ -202,7 +207,7 @@ func (p *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) bool {
 	return false
 }
 
-func (p *Board) occupyCornersIfCanLeadToVictory(aiSymbol FieldState) bool {
+func (p *Board) occupyCorners(aiSymbol FieldState) bool {
 	corners := [][2]int{
 		{0, 0}, {0, ColumnsNumber - 1}, {RowsNumber - 1, 0}, {RowsNumber - 1, ColumnsNumber - 1},
 	}
@@ -255,6 +260,8 @@ func (p *Board) AIMakeMove(aiSymbol FieldState) {
 		return
 	}
 
+	// TODO all this condition are separated, so AI makes the "nearest best" move, but not the best one
+
 	// check if any row or line can lead of players to victory
 	if p.occupyRowIfCanLeadToVictory(aiSymbol) {
 		return
@@ -272,7 +279,7 @@ func (p *Board) AIMakeMove(aiSymbol FieldState) {
 	// no direct win move are found, now AI tries to take the best possible fields on Board
 
 	// try to occupy corners of the field if they are free
-	if p.occupyCornersIfCanLeadToVictory(aiSymbol) {
+	if p.occupyCorners(aiSymbol) {
 		return
 	}
 
