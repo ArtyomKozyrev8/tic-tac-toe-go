@@ -18,9 +18,9 @@ game:
 		players := []board.FieldState{board.XSymbolInteger, board.OSymbolInteger}
 		for _, player := range players {
 			for {
-				fmt.Println("Player " + board.Symbols[player] + " make turn now!")
+				fmt.Println("Player " + theBoard.GetSymbol(player) + " make turn now!")
 
-				if playWithAI && board.Symbols[player] == board.Symbols[board.OSymbolInteger] {
+				if playWithAI && theBoard.GetSymbol(player) == theBoard.GetSymbol(board.OSymbolInteger) {
 					theBoard.AIMakeMove(player)
 					theBoard.ShowBoardState()
 					break
@@ -28,17 +28,17 @@ game:
 					row := ui.GetUserInput(ui.RowBoardPartName)
 					col := ui.GetUserInput(ui.ColumnBoardPartName)
 
-					err := theBoard.MakeMove(player, row, col)
-					if err != nil {
-						fmt.Println(err)
-					} else {
+					if theBoard.IsEmpty(row, col) {
+						theBoard.MakeMove(player, row, col)
 						theBoard.ShowBoardState()
 						break
+					} else {
+						fmt.Println("The place is already taken!")
 					}
 				}
 			}
 			if theBoard.CheckIfWinningCondition() {
-				fmt.Println(board.Symbols[player] + " Win!")
+				fmt.Println(theBoard.GetSymbol(player) + " Win!")
 				break game
 			} else {
 				totalSteps += 1
