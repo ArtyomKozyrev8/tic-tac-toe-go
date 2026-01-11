@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 )
 
 const ColumnsNumber int = 3
@@ -61,21 +62,26 @@ func (b *Board) IsEmpty(row, col int) bool {
 
 // ShowBoardState prints Board in console
 func (b *Board) ShowBoardState() {
-	// TODO lear string build - ask ai how to
-	fmt.Println("  0   1   2") // show columns' order index
-	for rowIndex := range b.fields {
-		line := ""
-		for colIndex := range b.fields[rowIndex] {
+	strBuilder := strings.Builder{}
+	strBuilder.Grow(100)
+	strBuilder.WriteString("  0   1   2\n") // show columns' order index
+
+	for rowIndex, row := range b.fields {
+		strBuilder.WriteString(strconv.Itoa(rowIndex))
+		strBuilder.WriteByte(' ')
+		for colIndex, item := range row {
+			strBuilder.WriteString(b.GetSymbol(item))
 			if colIndex < ColumnsNumber-1 {
-				line += b.GetSymbol(b.fields[rowIndex][colIndex]) + " | "
-			} else {
-				line += b.GetSymbol(b.fields[rowIndex][colIndex])
+				strBuilder.WriteString(" | ")
 			}
 		}
-		fmt.Println(strconv.Itoa(rowIndex) + " " + line) // show row index and state of Board
+		strBuilder.WriteByte('\n')
 	}
 
-	fmt.Print("\n#############\n") // visually separates different states of Board
+	strBuilder.WriteString("\n#############\n")
+	// strBuilder.String()
+
+	fmt.Print(strBuilder.String())
 }
 
 // CheckIfWinningCondition checks if any of the players won the game by analyzing Board state
@@ -178,6 +184,9 @@ func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 }
 
 func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
+	// TODO it could be several rows and columns which can lead to victory or enemy victory
+	// TODO return slice of this possible options
+
 	// check if any of rows or cols could give victory to any of the sides
 	// means at least one identical symbols in one column
 	for colIndex := 0; colIndex < ColumnsNumber; colIndex++ {
