@@ -15,12 +15,12 @@ func main() {
 
 game:
 	for {
-		players := []board.FieldState{board.XSymbolInteger, board.OSymbolInteger}
+		players := []board.FieldState{board.X, board.O}
 		for _, player := range players {
 			for {
 				fmt.Println("Player " + theBoard.GetSymbol(player) + " make turn now!")
 
-				if playWithAI && theBoard.GetSymbol(player) == theBoard.GetSymbol(board.OSymbolInteger) {
+				if playWithAI && theBoard.GetSymbol(player) == theBoard.GetSymbol(board.O) {
 					theBoard.AIMakeMove(player)
 					theBoard.ShowBoardState()
 					break

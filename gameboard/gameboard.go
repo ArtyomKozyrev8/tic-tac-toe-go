@@ -14,9 +14,11 @@ const RowsNumber int = 3
 
 type FieldState int // is used as enum for possible Board values
 
-const EmptyFieldSymbolInteger FieldState = 0
-const XSymbolInteger FieldState = 1 // first player symbol
-const OSymbolInteger FieldState = 2 // second player or AI symbol
+const (
+	Empty FieldState = iota
+	X
+	O
+)
 
 type nextMove struct {
 	rowIndex             int
@@ -31,22 +33,22 @@ type Board struct {
 
 func (b *Board) GetSymbol(state FieldState) string {
 	switch state {
-	case EmptyFieldSymbolInteger:
+	case Empty:
 		return "*"
-	case XSymbolInteger:
+	case X:
 		return "X"
-	case OSymbolInteger:
+	case O:
 		return "O"
 	default:
 		return "?"
 	}
 }
 
-// ClearBoard makes Board absolutely clear (makes all fields' state equal to EmptyFieldSymbolInteger)
+// ClearBoard makes Board absolutely clear (makes all fields' state equal to Empty)
 func (b *Board) ClearBoard() {
 	for i := range b.fields {
 		for j := range b.fields[i] {
-			b.fields[i][j] = EmptyFieldSymbolInteger
+			b.fields[i][j] = Empty
 		}
 	}
 }
@@ -57,7 +59,7 @@ func (b *Board) MakeMove(symbol FieldState, row, col int) {
 }
 
 func (b *Board) IsEmpty(row, col int) bool {
-	return b.fields[row][col] == EmptyFieldSymbolInteger
+	return b.fields[row][col] == Empty
 }
 
 // ShowBoardState prints Board in console
@@ -90,7 +92,7 @@ func (b *Board) CheckIfWinningCondition() bool {
 	// check all rows on Board if they are all occupied with the same symbols
 	for i := range b.fields {
 		if b.fields[i][0] == b.fields[i][1] && b.fields[i][0] == b.fields[i][2] {
-			if b.fields[i][0] != EmptyFieldSymbolInteger {
+			if b.fields[i][0] != Empty {
 				return true
 			}
 		}
@@ -99,7 +101,7 @@ func (b *Board) CheckIfWinningCondition() bool {
 	// check all columns on Board if they are all occupied with the same symbols
 	for i := range b.fields {
 		if b.fields[0][i] == b.fields[1][i] && b.fields[1][i] == b.fields[2][i] {
-			if b.fields[0][i] != EmptyFieldSymbolInteger {
+			if b.fields[0][i] != Empty {
 				return true
 			}
 		}
@@ -107,14 +109,14 @@ func (b *Board) CheckIfWinningCondition() bool {
 
 	// check first cross-line winning condition
 	if b.fields[0][0] == b.fields[1][1] && b.fields[0][0] == b.fields[2][2] {
-		if b.fields[0][0] != EmptyFieldSymbolInteger {
+		if b.fields[0][0] != Empty {
 			return true
 		}
 	}
 
 	// check second cross-line winning condition
 	if b.fields[0][2] == b.fields[1][1] && b.fields[0][2] == b.fields[2][0] {
-		if b.fields[0][2] != EmptyFieldSymbolInteger {
+		if b.fields[0][2] != Empty {
 			return true
 		}
 	}
@@ -137,9 +139,9 @@ func (b *Board) occupyCrossLineIfCanLeadToVictory() *nextMove {
 	}
 
 	if winRow != -1 {
-		if b.fields[winRow][winCol] == EmptyFieldSymbolInteger {
+		if b.fields[winRow][winCol] == Empty {
 			symbol := b.fields[1][1] // it is always occupied in the first AI move
-			if symbol == XSymbolInteger {
+			if symbol == X {
 				return &nextMove{winRow, winCol, false, true}
 			} else {
 				return &nextMove{winRow, winCol, true, false}
@@ -151,6 +153,8 @@ func (b *Board) occupyCrossLineIfCanLeadToVictory() *nextMove {
 }
 
 func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
+	var preventEnemyWinChoice *nextMove = nil
+
 	// check if any of rows or cols could give victory to any of the sides
 	// means at least one identical symbols in one row
 	for rowIndex := 0; rowIndex < RowsNumber; rowIndex++ {
@@ -162,7 +166,7 @@ func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 		for colIndex := 0; colIndex < ColumnsNumber; colIndex++ {
 			if b.fields[rowIndex][colIndex] == aiSymbol {
 				aiSymbolsInRow++
-			} else if b.fields[rowIndex][colIndex] == EmptyFieldSymbolInteger {
+			} else if b.fields[rowIndex][colIndex] == Empty {
 				freeColIndex = colIndex
 			} else {
 				enemySymbolsInRow++
@@ -171,21 +175,21 @@ func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 
 		// check if AI can win first
 		if aiSymbolsInRow == RowsNumber-1 && freeColIndex != -1 {
+			// return if found victory choice
 			return &nextMove{rowIndex, freeColIndex, true, false}
 		}
 
 		// prevent player from winning
 		if enemySymbolsInRow == RowsNumber-1 && freeColIndex != -1 {
-			return &nextMove{rowIndex, freeColIndex, false, true}
+			preventEnemyWinChoice = &nextMove{rowIndex, freeColIndex, false, true}
 		}
 	}
 
-	return nil
+	return preventEnemyWinChoice
 }
 
 func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
-	// TODO it could be several rows and columns which can lead to victory or enemy victory
-	// TODO return slice of this possible options
+	var preventEnemyWinChoice *nextMove = nil
 
 	// check if any of rows or cols could give victory to any of the sides
 	// means at least one identical symbols in one column
@@ -198,7 +202,7 @@ func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 		for rowIndex := 0; rowIndex < RowsNumber; rowIndex++ {
 			if b.fields[rowIndex][colIndex] == aiSymbol {
 				aiSymbolsInCol++
-			} else if b.fields[rowIndex][colIndex] == EmptyFieldSymbolInteger {
+			} else if b.fields[rowIndex][colIndex] == Empty {
 				freeRowIndex = rowIndex
 			} else {
 				enemySymbolsInCol++
@@ -207,16 +211,17 @@ func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 
 		// check if AI can win
 		if aiSymbolsInCol == ColumnsNumber-1 && freeRowIndex != -1 {
+			// return if found victory choice
 			return &nextMove{freeRowIndex, colIndex, true, false}
 		}
 
 		// prevent player from winning
 		if enemySymbolsInCol == ColumnsNumber-1 && freeRowIndex != -1 {
-			return &nextMove{freeRowIndex, colIndex, false, true}
+			preventEnemyWinChoice = &nextMove{freeRowIndex, colIndex, false, true}
 		}
 	}
 
-	return nil
+	return preventEnemyWinChoice
 }
 
 func (b *Board) occupyCorners() *nextMove {
@@ -231,7 +236,7 @@ func (b *Board) occupyCorners() *nextMove {
 	}
 
 	for i := range corners {
-		if b.fields[corners[i][0]][corners[i][1]] == EmptyFieldSymbolInteger {
+		if b.fields[corners[i][0]][corners[i][1]] == Empty {
 			return &nextMove{corners[i][0], corners[i][1], false, false}
 		}
 	}
@@ -242,7 +247,7 @@ func (b *Board) occupyCorners() *nextMove {
 func (b *Board) occupyAnyField() *nextMove {
 	for i := range b.fields {
 		for j := range b.fields[i] {
-			if b.fields[i][j] == EmptyFieldSymbolInteger {
+			if b.fields[i][j] == Empty {
 				return &nextMove{i, j, false, false}
 			}
 		}
@@ -251,7 +256,7 @@ func (b *Board) occupyAnyField() *nextMove {
 }
 
 func (b *Board) occupyCenterOfBoard() *nextMove {
-	if b.fields[1][1] == EmptyFieldSymbolInteger {
+	if b.fields[1][1] == Empty {
 		return &nextMove{1, 1, false, false}
 	}
 
@@ -268,8 +273,8 @@ func (b *Board) chooseBestPossibleMove() *nextMove {
 	var choices [3]*nextMove
 
 	choices[0] = b.occupyCrossLineIfCanLeadToVictory()
-	choices[1] = b.occupyRowIfCanLeadToVictory(OSymbolInteger)
-	choices[2] = b.occupyColumnIfCanLeadToVictory(OSymbolInteger)
+	choices[1] = b.occupyRowIfCanLeadToVictory(O)
+	choices[2] = b.occupyColumnIfCanLeadToVictory(O)
 
 	// check if any move can lead to AI Victory
 	for _, choice := range choices {
@@ -298,7 +303,7 @@ func (b *Board) chooseBestPossibleMove() *nextMove {
 }
 
 // AIMakeMove contains logic for AI player to make moves
-// AI symbol is always "O" symbol OSymbolInteger
+// AI symbol is always "O" symbol O
 func (b *Board) AIMakeMove(aiSymbol FieldState) {
 	move := b.chooseBestPossibleMove()
 	if move != nil {
