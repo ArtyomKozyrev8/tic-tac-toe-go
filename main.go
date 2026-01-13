@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/ArtyomKozyrev8/tic-tac-toe-go/gameboard"
 	"github.com/ArtyomKozyrev8/tic-tac-toe-go/ui"
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano()) // keep old style
+
 	theBoard := board.Board{}
 	theBoard.ShowBoardState()
-	totalSteps := 0 // checks if all Board is full
 	playWithAI := ui.DecideToPlayWithAI()
 
 game:
@@ -28,12 +31,13 @@ game:
 					row := ui.GetUserInput(ui.RowBoardPartName)
 					col := ui.GetUserInput(ui.ColumnBoardPartName)
 
-					if theBoard.IsEmpty(row, col) {
-						theBoard.MakeMove(player, row, col)
+					err := theBoard.MakeMove(player, row, col)
+
+					if err != nil {
+						fmt.Println(err)
+					} else {
 						theBoard.ShowBoardState()
 						break
-					} else {
-						fmt.Println("The place is already taken!")
 					}
 				}
 			}
@@ -41,10 +45,9 @@ game:
 				fmt.Println(theBoard.GetSymbol(player) + " Win!")
 				break game
 			} else {
-				totalSteps += 1
-				if totalSteps == board.ColumnsNumber*board.RowsNumber {
+				// checks if all Board is full
+				if theBoard.IsDraw() {
 					fmt.Println("Nobody win... Play another round")
-					totalSteps = 0
 					theBoard.ClearBoard()
 				}
 			}

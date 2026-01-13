@@ -14,10 +14,28 @@ const RowsNumber int = 3
 
 type FieldState int // is used as enum for possible Board values
 
+type NotEmptyFieldError struct {
+	row int
+	col int
+}
+
+func (err NotEmptyFieldError) Error() string {
+	return fmt.Sprintf("Field row=%d col=%d is not empty", err.row, err.col)
+}
+
+type OutOfBoundsError struct {
+	row int
+	col int
+}
+
+func (err OutOfBoundsError) Error() string {
+	return fmt.Sprintf("row=%d and col=%d should be from 0 to %d ", err.row, err.col, RowsNumber-1)
+}
+
 const (
 	Empty FieldState = iota
 	X
-	O
+	O // AI PLAYER ALWAYS (If Player decided to play with AI, otherwise it is second human player
 )
 
 type nextMove struct {
@@ -28,7 +46,8 @@ type nextMove struct {
 }
 
 type Board struct {
-	fields [ColumnsNumber][RowsNumber]FieldState
+	fields               [ColumnsNumber][RowsNumber]FieldState
+	occupiedFieldsNumber int
 }
 
 func (b *Board) GetSymbol(state FieldState) string {
@@ -51,15 +70,24 @@ func (b *Board) ClearBoard() {
 			b.fields[i][j] = Empty
 		}
 	}
+	b.occupiedFieldsNumber = 0
 }
 
 // MakeMove adds symbol of to chosen field on Board
-func (b *Board) MakeMove(symbol FieldState, row, col int) {
-	b.fields[row][col] = symbol
-}
+func (b *Board) MakeMove(symbol FieldState, row, col int) error {
+	if row < 0 || col < 0 || row >= RowsNumber || col >= ColumnsNumber {
+		err := OutOfBoundsError{row, col}
+		return err
+	}
 
-func (b *Board) IsEmpty(row, col int) bool {
-	return b.fields[row][col] == Empty
+	if b.fields[row][col] != Empty {
+		err := NotEmptyFieldError{row, col}
+		return err
+	} else {
+		b.fields[row][col] = symbol
+		b.occupiedFieldsNumber += 1
+	}
+	return nil
 }
 
 // ShowBoardState prints Board in console
@@ -188,6 +216,23 @@ func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 	return preventEnemyWinChoice
 }
 
+// detectForkConditions - tries to catch at least some Win-Forks
+func (b *Board) detectForkConditions() *nextMove {
+	if b.fields[1][1] != O {
+		return nil
+	}
+
+	if b.fields[0][0] == b.fields[2][2] && b.fields[2][2] == X {
+		return &nextMove{1, 0, false, true}
+	}
+
+	if b.fields[0][2] == b.fields[2][0] && b.fields[2][0] == X {
+		return &nextMove{1, 0, false, true}
+	}
+
+	return nil
+}
+
 func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 	var preventEnemyWinChoice *nextMove = nil
 
@@ -270,6 +315,13 @@ func (b *Board) chooseBestPossibleMove() *nextMove {
 		return moveCenter
 	}
 
+	if b.occupiedFieldsNumber == 3 {
+		preventFork := b.detectForkConditions()
+		if preventFork != nil {
+			return preventFork
+		}
+	}
+
 	var choices [3]*nextMove
 
 	choices[0] = b.occupyCrossLineIfCanLeadToVictory()
@@ -302,11 +354,18 @@ func (b *Board) chooseBestPossibleMove() *nextMove {
 	return b.occupyAnyField()
 }
 
+func (b *Board) IsDraw() bool {
+	return b.occupiedFieldsNumber == ColumnsNumber*RowsNumber
+}
+
 // AIMakeMove contains logic for AI player to make moves
 // AI symbol is always "O" symbol O
 func (b *Board) AIMakeMove(aiSymbol FieldState) {
 	move := b.chooseBestPossibleMove()
 	if move != nil {
-		b.MakeMove(aiSymbol, move.rowIndex, move.colIndex)
+		err := b.MakeMove(aiSymbol, move.rowIndex, move.colIndex)
+		if err != nil {
+			fmt.Printf("Error making move: %v", err)
+		}
 	}
 }
