@@ -88,8 +88,7 @@ func (b *Board) MakeMove(symbol FieldState, row, col int) error {
 	return nil
 }
 
-// ShowBoardState prints Board in console
-func (b *Board) ShowBoardState() {
+func (b Board) String() string {
 	strBuilder := strings.Builder{}
 	strBuilder.Grow(100)
 	strBuilder.WriteString("  0   1   2\n") // show columns' order index
@@ -107,9 +106,8 @@ func (b *Board) ShowBoardState() {
 	}
 
 	strBuilder.WriteString("\n#############\n")
-	// strBuilder.String()
 
-	fmt.Print(strBuilder.String())
+	return strBuilder.String()
 }
 
 // CheckIfWinningCondition checks if any of the players won the game by analyzing Board state

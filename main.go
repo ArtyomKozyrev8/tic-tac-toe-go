@@ -13,7 +13,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano()) // keep old style
 
 	theBoard := board.Board{}
-	theBoard.ShowBoardState()
+	fmt.Print(theBoard)
 	playWithAI := ui.DecideToPlayWithAI()
 
 game:
@@ -25,7 +25,7 @@ game:
 
 				if playWithAI && theBoard.GetSymbol(player) == theBoard.GetSymbol(board.O) {
 					theBoard.AIMakeMove(player)
-					theBoard.ShowBoardState()
+					fmt.Print(theBoard)
 					break
 				} else {
 					row := ui.GetUserInput(ui.RowBoardPartName)
@@ -36,7 +36,7 @@ game:
 					if err != nil {
 						fmt.Println(err)
 					} else {
-						theBoard.ShowBoardState()
+						fmt.Print(theBoard)
 						break
 					}
 				}
