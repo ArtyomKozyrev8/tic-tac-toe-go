@@ -1,7 +1,5 @@
 package board
 
-// TODO add tests to packages when all is improved!
-
 import (
 	"fmt"
 	"math/rand"
@@ -152,7 +150,7 @@ func (b *Board) CheckIfWinningCondition() bool {
 	return false
 }
 
-func (b *Board) occupyCrossLineIfCanLeadToVictory() *nextMove {
+func (b *Board) occupyCrossLineIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
 	winRow, winCol := -1, -1
 
 	// we compare with center, because AI always tries to occupy center at first
@@ -169,51 +167,15 @@ func (b *Board) occupyCrossLineIfCanLeadToVictory() *nextMove {
 	if winRow != -1 {
 		if b.fields[winRow][winCol] == Empty {
 			symbol := b.fields[1][1] // it is always occupied in the first AI move
-			if symbol == X {
-				return &nextMove{winRow, winCol, false, true}
-			} else {
+			if symbol == aiSymbol {
 				return &nextMove{winRow, winCol, true, false}
+			} else {
+				return &nextMove{winRow, winCol, false, true}
 			}
 		}
 	}
 
 	return nil
-}
-
-func (b *Board) occupyRowIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
-	var preventEnemyWinChoice *nextMove = nil
-
-	// check if any of rows or cols could give victory to any of the sides
-	// means at least one identical symbols in one row
-	for rowIndex := 0; rowIndex < RowsNumber; rowIndex++ {
-		// contains state of one row
-		enemySymbolsInRow := 0
-		aiSymbolsInRow := 0
-		freeColIndex := -1 // indicates that all positions are occupied, otherwise we get index of the position
-
-		for colIndex := 0; colIndex < ColumnsNumber; colIndex++ {
-			if b.fields[rowIndex][colIndex] == aiSymbol {
-				aiSymbolsInRow++
-			} else if b.fields[rowIndex][colIndex] == Empty {
-				freeColIndex = colIndex
-			} else {
-				enemySymbolsInRow++
-			}
-		}
-
-		// check if AI can win first
-		if aiSymbolsInRow == RowsNumber-1 && freeColIndex != -1 {
-			// return if found victory choice
-			return &nextMove{rowIndex, freeColIndex, true, false}
-		}
-
-		// prevent player from winning
-		if enemySymbolsInRow == RowsNumber-1 && freeColIndex != -1 {
-			preventEnemyWinChoice = &nextMove{rowIndex, freeColIndex, false, true}
-		}
-	}
-
-	return preventEnemyWinChoice
 }
 
 // detectForkConditions - tries to catch at least some Win-Forks
@@ -233,36 +195,51 @@ func (b *Board) detectForkConditions() *nextMove {
 	return nil
 }
 
-func (b *Board) occupyColumnIfCanLeadToVictory(aiSymbol FieldState) *nextMove {
+// occupyLine checks if occupation of any Row or any Column can lead to AI victory or Enemy Player Victory
+// aiSymbol - is a symbol which is used by AI player, in the program AI always use O
+// ColCheck if false we check all Rows, if true we check all Columns
+func (b *Board) occupyLine(aiSymbol FieldState, ColCheck bool) *nextMove {
 	var preventEnemyWinChoice *nextMove = nil
 
-	// check if any of rows or cols could give victory to any of the sides
-	// means at least one identical symbols in one column
-	for colIndex := 0; colIndex < ColumnsNumber; colIndex++ {
-		// contains state of one column
-		enemySymbolsInCol := 0
-		aiSymbolsInCol := 0
-		freeRowIndex := -1 // indicates that all positions are occupied, otherwise we get index of the position
+	lineLen := RowsNumber // RowNumber = ColumnsNumber - we can take any
 
-		for rowIndex := 0; rowIndex < RowsNumber; rowIndex++ {
-			if b.fields[rowIndex][colIndex] == aiSymbol {
-				aiSymbolsInCol++
-			} else if b.fields[rowIndex][colIndex] == Empty {
-				freeRowIndex = rowIndex
+	// check if any of rows or cols could give victory to any of the sides
+	// means at least one identical symbols in one row
+	for i := 0; i < lineLen; i++ {
+		enemySymbols, aiSymbols, freeIndex := 0, 0, -1
+
+		for j := 0; j < lineLen; j++ {
+			item := b.fields[i][j]
+			if ColCheck {
+				item = b.fields[j][i]
+			}
+
+			if item == aiSymbol {
+				aiSymbols++
+			} else if item == Empty {
+				freeIndex = j
 			} else {
-				enemySymbolsInCol++
+				enemySymbols++
 			}
 		}
 
-		// check if AI can win
-		if aiSymbolsInCol == ColumnsNumber-1 && freeRowIndex != -1 {
+		// check if AI can win first
+		if aiSymbols == lineLen-1 && freeIndex != -1 {
 			// return if found victory choice
-			return &nextMove{freeRowIndex, colIndex, true, false}
+			if ColCheck {
+				return &nextMove{freeIndex, i, true, false}
+			}
+
+			return &nextMove{i, freeIndex, true, false}
 		}
 
 		// prevent player from winning
-		if enemySymbolsInCol == ColumnsNumber-1 && freeRowIndex != -1 {
-			preventEnemyWinChoice = &nextMove{freeRowIndex, colIndex, false, true}
+		if enemySymbols == lineLen-1 && freeIndex != -1 {
+			if ColCheck {
+				preventEnemyWinChoice = &nextMove{freeIndex, i, false, true}
+			} else {
+				preventEnemyWinChoice = &nextMove{i, freeIndex, false, true}
+			}
 		}
 	}
 
@@ -324,9 +301,9 @@ func (b *Board) chooseBestPossibleMove() *nextMove {
 
 	var choices [3]*nextMove
 
-	choices[0] = b.occupyCrossLineIfCanLeadToVictory()
-	choices[1] = b.occupyRowIfCanLeadToVictory(O)
-	choices[2] = b.occupyColumnIfCanLeadToVictory(O)
+	choices[0] = b.occupyCrossLineIfCanLeadToVictory(O)
+	choices[1] = b.occupyLine(O, false) // check all rows
+	choices[2] = b.occupyLine(O, true)  // check all columns
 
 	// check if any move can lead to AI Victory
 	for _, choice := range choices {
